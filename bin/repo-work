@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-WORKSPACE_YAML="${WORKSPACE_YAML:-$HOME/.config/repo-work/workspace.yaml}"
+WORKSPACE_YAML="${WORKSPACE_YAML:-$HOME/config/workspace.yaml}"
 DEFAULT_LAYOUT="${LAYOUT:-auto}"
 SHELL_CMD="${SHELL_CMD:-zsh}"
 YQ_BIN="${YQ_BIN:-yq}"
