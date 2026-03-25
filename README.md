@@ -1,4 +1,4 @@
-# focus-mode
+# cockpit
 
 A single command to launch a full development workspace in tmux — editor, shell, and Claude side by side.
 
