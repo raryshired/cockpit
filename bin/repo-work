@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WORKSPACE_YAML="${WORKSPACE_YAML:-$HOME/.config/repo-work/workspace.yaml}"
+DEFAULT_LAYOUT="${LAYOUT:-auto}"
+SHELL_CMD="${SHELL_CMD:-zsh}"
+YQ_BIN="${YQ_BIN:-yq}"
+
+KEY="${1:-}"
+LAYOUT="$DEFAULT_LAYOUT"
+
+install_tool() {
+  local cmd="$1"
+  local brew_name="${2:-$1}"
+
+  if command -v "$cmd" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "Missing dependency: $cmd"
+
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "Homebrew is not installed. Cannot auto-install $cmd."
+    exit 1
+  fi
+
+  echo "Installing $brew_name via Homebrew..."
+  brew install "$brew_name"
+}
+
+install_tool git
+install_tool tmux
+install_tool zsh
+install_tool nvim neovim
+install_tool yq
+
+if [[ -z "$KEY" ]]; then
+  echo "Usage: repo-work <key> [--layout auto|horizontal|vertical]"
+  exit 1
+fi
+
+shift || true
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --layout)
+      LAYOUT="${2:-auto}"
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
+if [[ ! -f "$WORKSPACE_YAML" ]]; then
+  echo "Missing workspace.yaml: $WORKSPACE_YAML"
+  exit 1
+fi
+
+BASE_DIR="$("$YQ_BIN" -r '.paths.repos' "$WORKSPACE_YAML")"
+DEFAULT_BRANCH="$("$YQ_BIN" -r '.defaults.branch' "$WORKSPACE_YAML")"
+
+TYPE="$("$YQ_BIN" -r ".repos.\"$KEY\".type" "$WORKSPACE_YAML")"
+
+if [[ "$TYPE" == "null" ]]; then
+  echo "Repo not found in workspace.yaml: $KEY"
+  exit 1
+fi
+
+REPO_PATH="$("$YQ_BIN" -r ".repos.\"$KEY\".path" "$WORKSPACE_YAML")"
+
+case "$TYPE" in
+  git)
+    REPO_URL="$("$YQ_BIN" -r ".repos.\"$KEY\".url" "$WORKSPACE_YAML")"
+
+    if [[ ! -d "$REPO_PATH/.git" ]]; then
+      mkdir -p "$(dirname "$REPO_PATH")"
+      echo "Cloning $REPO_URL -> $REPO_PATH"
+      git clone "$REPO_URL" "$REPO_PATH"
+    fi
+
+    cd "$REPO_PATH"
+
+    git fetch --all --prune || true
+
+    CURRENT_BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || echo main)"
+
+    if git show-ref --verify --quiet "refs/heads/$DEFAULT_BRANCH"; then
+      git checkout "$DEFAULT_BRANCH" || true
+    elif git ls-remote --exit-code --heads origin "$DEFAULT_BRANCH" >/dev/null 2>&1; then
+      git checkout -b "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH" || true
+    else
+      git checkout "$CURRENT_BRANCH" || true
+      git checkout -b "$DEFAULT_BRANCH" || true
+    fi
+
+    git pull --ff-only || true
+    ;;
+  path)
+    mkdir -p "$REPO_PATH"
+    cd "$REPO_PATH"
+    ;;
+  *)
+    echo "Unknown repo type: $TYPE"
+    exit 1
+    ;;
+esac
+
+if [[ "$LAYOUT" == "auto" ]]; then
+  COLS="$(tput cols 2>/dev/null || echo 120)"
+  TERM_LINES="$(tput lines 2>/dev/null || echo 40)"
+  (( COLS >= TERM_LINES )) && LAYOUT="horizontal" || LAYOUT="vertical"
+fi
+
+SESSION_NAME="$(printf '%s' "$KEY" | tr '.' '_' | tr '/' '_' | tr '-' '_')_work"
+
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+  exec tmux attach -t "$SESSION_NAME"
+fi
+
+tmux new-session -d -s "$SESSION_NAME" -c "$REPO_PATH"
+WINDOW="${SESSION_NAME}:1"
+
+if [[ "$LAYOUT" == "horizontal" ]]; then
+  tmux split-window -h -p 60 -t "${WINDOW}.1"
+  tmux split-window -v -p 10 -t "${WINDOW}.1"
+
+  tmux send-keys -t "${WINDOW}.1" "nvim ." C-m
+  tmux send-keys -t "${WINDOW}.2" "$SHELL_CMD" C-m
+  tmux send-keys -t "${WINDOW}.3" "claude" C-m
+else
+  tmux split-window -v -p 55 -t "${WINDOW}.1"
+  tmux split-window -v -p 91 -t "${WINDOW}.2"
+
+  tmux send-keys -t "${WINDOW}.1" "nvim ." C-m
+  tmux send-keys -t "${WINDOW}.2" "$SHELL_CMD" C-m
+  tmux send-keys -t "${WINDOW}.3" "claude" C-m
+fi
+
+tmux select-pane -t "${WINDOW}.1"
+exec tmux attach -t "$SESSION_NAME"

@@ -1,0 +1,17 @@
+version: 1
+
+paths:
+  repos: /Users/yourname/repos
+
+defaults:
+  branch: develop
+
+repos:
+  myapp:
+    type: git
+    url: git@github.com:yourname/myapp.git
+    path: /Users/yourname/repos/myapp
+
+  notes:
+    type: path
+    path: /Users/yourname/repos/notes
