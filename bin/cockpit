@@ -35,7 +35,7 @@ install_tool nvim neovim
 install_tool yq
 
 if [[ -z "$KEY" ]]; then
-  echo "Usage: repo-work <key> [--layout auto|horizontal|vertical]"
+  echo "Usage: cockpit <key> [--layout auto|horizontal|vertical]"
   exit 1
 fi
 

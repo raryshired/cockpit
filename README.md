@@ -4,7 +4,7 @@ A single command to launch a full development workspace in tmux — editor, shel
 
 ## What it does
 
-`repo-work` reads a YAML config, clones or navigates to a repo, and opens a tmux session with three panes:
+`cockpit` reads a YAML config, clones or navigates to a repo, and opens a tmux session with three panes:
 
 1. **Neovim** — opens the project root
 2. **Shell** — a zsh pane for running commands
@@ -17,13 +17,13 @@ If the session already exists, it reattaches instead of creating a duplicate.
 ```bash
 # 1. Copy the example config
 mkdir -p ~/config
-cp config/workspace.yaml ~/config/workspace.yaml
+cp config/workspace.yaml ~/config/
 
 # 2. Edit it with your repos
 vim ~/config/workspace.yaml
 
 # 3. Run it
-bin/repo-work myapp
+bin/cockpit myapp
 ```
 
 ## Configuration
@@ -60,7 +60,7 @@ repos:
 ## Usage
 
 ```
-repo-work <key> [--layout auto|horizontal|vertical]
+cockpit <key> [--layout auto|horizontal|vertical]
 ```
 
 - `<key>` — a repo key from your `workspace.yaml`
