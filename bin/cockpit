@@ -139,5 +139,5 @@ else
   tmux send-keys -t "${WINDOW}.3" "claude" C-m
 fi
 
-tmux select-pane -t "${WINDOW}.1"
+tmux select-pane -t "${WINDOW}.3"
 exec tmux attach -t "$SESSION_NAME"

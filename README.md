@@ -22,8 +22,16 @@ cp config/workspace.yaml ~/config/
 # 2. Edit it with your repos
 vim ~/config/workspace.yaml
 
-# 3. Run it
-bin/cockpit myapp
+# 3. Add to your PATH
+echo 'export PATH="$PATH:$(pwd)/bin"' >> ~/.zshrc
+source ~/.zshrc
+
+# 4. (Optional) Install the recommended tmux config
+cp config/tmux.conf ~/.tmux.conf
+tmux source-file ~/.tmux.conf  # reload if tmux is running
+
+# 5. Run it
+cockpit myapp
 ```
 
 ## Configuration
